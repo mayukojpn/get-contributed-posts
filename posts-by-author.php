@@ -1,17 +1,16 @@
 <?php
 /**
- * Plugin Name: Author Post List
+ * Plugin Name: Posts by Author
  * Version: 0.1-alpha
- * Description: PLUGIN DESCRIPTION HERE
- * Author: YOUR NAME HERE
- * Author URI: YOUR SITE HERE
- * Plugin URI: PLUGIN SITE HERE
- * Text Domain: author_post_list
+ * Description: Show post list of specific author from any WordPress site by using WP REST API.
+ * Author: Mayo Moriyama
+ * Author URI: http://mayuko.me
+ * Text Domain: posts-by-author
  * Domain Path: /languages
- * @package Author-post-list
+ * @package posts-by-author
  */
 
- class Author_Posts_Widget extends WP_Widget {
+ class Posts_By_Author_Widget extends WP_Widget {
  	/**
  	 * Sets up a new Posts by Author widget instance.
  	 *
@@ -19,9 +18,9 @@
  	 * @access public
  	 */
  	public function __construct() {
- 		$widget_ops = array('classname' => 'widget_entries_by_author', 'description' => __( "Most recent Posts by author.") );
+ 		$widget_ops = array('classname' => 'widget-posts-by-author', 'description' => __( "Recent posts by author.") );
  		parent::__construct('author-posts', __('Posts by Author'), $widget_ops);
- 		$this->alt_option_name = 'widget_entries_by_author';
+ 		$this->alt_option_name = 'widget-posts-by-author';
  	}
  	/**
  	 * Outputs the content for the current Posts by Author widget instance.
@@ -37,16 +36,18 @@
  		if ( ! isset( $args['widget_id'] ) ) {
  			$args['widget_id'] = $this->id;
  		}
- 		$title = ( ! empty( $instance['title'] ) ) ? $instance['title'] : __( 'Posts by Author' );
+ 		$title = ( ! empty( $instance['title'] ) ) ? $instance['title'] : '';
  		/** This filter is documented in wp-includes/widgets/class-wp-widget-pages.php */
  		$title = apply_filters( 'widget_title', $title, $instance, $this->id_base );
+    $site_url = ( ! empty( $instance['site_url'] ) ) ? $instance['site_url'] : '';
+    $end_point = ( ! empty( $instance['end_point'] ) ) ? $instance['end_point'] : 'wp-json/wp/v2';
     $author_id = ( ! empty( $instance['author_id'] ) ) ? absint( $instance['author_id'] ) : 1;
  		if ( ! $author_id )
  			$author_id = 1;
  		$number = ( ! empty( $instance['number'] ) ) ? absint( $instance['number'] ) : 5;
  		if ( ! $number )
  			$number = 5;
- 		$show_date = isset( $instance['show_date'] ) ? $instance['show_date'] : false;
+ 		$version_one = isset( $instance['version_one'] ) ? $instance['version_one'] : false;
  		/**
  		 * Filter the arguments for the Posts by Author widget.
  		 *
@@ -93,7 +94,7 @@
     echo $args['after_widget']; ?>
     <script type="text/javascript">
     jQuery(function($) {
-      var url = 'http://wp-e.org/wp-json/';
+      <?php echo "var url = '".$site_url."/wp-json/wp/v2/';"; ?>
       $.ajax({
         url: url + 'posts',
         type:'GET',
@@ -107,21 +108,22 @@
         timeout:10000,
       }).done(function(datas) {
 
-        var user_name = datas[0]['author']['nickname'];
-
-        $('#wpapi').append('<h2>'+ user_name +'さんの最新記事一覧</h2>');
-
         var ul = $('<ul></ul>');
 
         for (var i = 0; i < datas.length; i++) {
-          var post_title = datas[i]['title'];
-          var post_url = datas[i]['link'];
-          $(ul).append('<li>'+ post_title +'</li>');
+          var post_title = datas[i]['title']['rendered'],
+              post_url  = datas[i]['link'],
+              post_time = new Date(datas[i]['date']);
+          var post_link = $('<a>' + post_title + '</a>').attr('href',post_url);
+          var post_list = $('<li></li>')
+              .append($('<time>'+post_time.getFullYear()+'年'+post_time.getMonth()+'月'+post_time.getDate()+'日</time>'))
+              .append(post_link);
+          $(ul).append(post_list);
         }
         $('#wpapi').append(ul);
 
       }).fail(function(datas) {
-        $('#wpapi').append('fail');
+        $('#wpapi').append('');
       });
 
     });
@@ -146,10 +148,12 @@
  	 */
  	public function update( $new_instance, $old_instance ) {
  		$instance = $old_instance;
- 		$instance['title'] = sanitize_text_field( $new_instance['title'] );
+    $instance['title'] = sanitize_text_field( $new_instance['title'] );
+    $instance['site_url'] = sanitize_text_field( $new_instance['site_url'] );
+    $instance['end_point'] = sanitize_text_field( $new_instance['end_point'] );
     $instance['author_id'] = (int) $new_instance['author_id'];
  		$instance['number'] = (int) $new_instance['number'];
- 		$instance['show_date'] = isset( $new_instance['show_date'] ) ? (bool) $new_instance['show_date'] : false;
+ 		$instance['version_one'] = isset( $new_instance['version_one'] ) ? (bool) $new_instance['version_one'] : false;
  		return $instance;
  	}
  	/**
@@ -161,13 +165,21 @@
  	 * @param array $instance Current settings.
  	 */
  	public function form( $instance ) {
- 		$title     = isset( $instance['title'] ) ? esc_attr( $instance['title'] ) : '';
-    $author_id    = isset( $instance['author_id'] ) ? absint( $instance['author_id'] ) : 1;
+    $title     = isset( $instance['title'] ) ? esc_attr( $instance['title'] ) : '';
+    $site_url  = isset( $instance['site_url'] ) ? esc_attr( $instance['site_url'] ) : '';
+ 		$end_point = isset( $instance['end_point'] ) ? esc_attr( $instance['end_point'] ) : 'wp-json';
+    $author_id = isset( $instance['author_id'] ) ? absint( $instance['author_id'] ) : 1;
  		$number    = isset( $instance['number'] ) ? absint( $instance['number'] ) : 5;
- 		$show_date = isset( $instance['show_date'] ) ? (bool) $instance['show_date'] : false;
+ 		$version_one = isset( $instance['version_one'] ) ? (bool) $instance['version_one'] : false;
  ?>
  		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label>
  		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo $title; ?>" /></p>
+
+    <p><label for="<?php echo $this->get_field_id( 'end_point' ); ?>"><?php _e( 'Site URL:' ); ?></label>
+ 		<input class="widefat" id="<?php echo $this->get_field_id( 'end_point' ); ?>" name="<?php echo $this->get_field_name( 'end_point' ); ?>" type="text" value="<?php echo $end_point; ?>" /></p>
+
+    <p><label for="<?php echo $this->get_field_id( 'site_url' ); ?>"><?php _e( 'Site URL:' ); ?></label>
+ 		<input class="widefat" id="<?php echo $this->get_field_id( 'site_url' ); ?>" name="<?php echo $this->get_field_name( 'site_url' ); ?>" type="text" value="<?php echo $site_url; ?>" /></p>
 
     <p><label for="<?php echo $this->get_field_id( 'author_id' ); ?>"><?php _e( 'Author ID:' ); ?></label>
  		<input class="widefat" id="<?php echo $this->get_field_id( 'author_id' ); ?>" name="<?php echo $this->get_field_name( 'author_id' ); ?>" type="number" step="1" min="1" value="<?php echo $author_id; ?>" /></p>
@@ -175,9 +187,9 @@
  		<p><label for="<?php echo $this->get_field_id( 'number' ); ?>"><?php _e( 'Number of posts to show:' ); ?></label>
  		<input class="tiny-text" id="<?php echo $this->get_field_id( 'number' ); ?>" name="<?php echo $this->get_field_name( 'number' ); ?>" type="number" step="1" min="1" value="<?php echo $number; ?>" size="3" /></p>
 
- 		<p><input class="checkbox" type="checkbox"<?php checked( $show_date ); ?> id="<?php echo $this->get_field_id( 'show_date' ); ?>" name="<?php echo $this->get_field_name( 'show_date' ); ?>" />
- 		<label for="<?php echo $this->get_field_id( 'show_date' ); ?>"><?php _e( 'Display post date?' ); ?></label></p>
+ 		<p><input class="checkbox" type="checkbox"<?php checked( $version_one ); ?> id="<?php echo $this->get_field_id( 'version_one' ); ?>" name="<?php echo $this->get_field_name( 'version_one' ); ?>" />
+ 		<label for="<?php echo $this->get_field_id( 'version_one' ); ?>"><?php _e( 'Check if you use wp-api v1.' ); ?></label></p>
  <?php
  	}
  }
- add_action( 'widgets_init', create_function( '', 'return register_widget( "Author_Posts_Widget" );' ) );
+ add_action( 'widgets_init', create_function( '', 'return register_widget( "Posts_By_Author_Widget" );' ) );
