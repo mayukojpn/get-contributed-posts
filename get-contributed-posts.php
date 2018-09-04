@@ -1,36 +1,36 @@
 <?php
 /**
- * Plugin Name: Posts by Author
+ * Plugin Name: Get Contributed Posts
  * Version: 0.1-alpha
- * Description: Show post list of specific author from any WordPress site by using WP REST API.
+ * Description: Show post list of specific author from any WordPress site by getting WP REST API.
  * Author: Mayo Moriyama
  * Author URI: http://mayuko.me
- * Text Domain: posts-by-author
+ * Text Domain: get-contributed-posts
  * Domain Path: /languages
- * @package posts-by-author
+ * @package get-contributed-posts
  */
 
- class Posts_By_Author_Widget extends WP_Widget {
+ class Get_Contributed_Posts_Widget extends WP_Widget {
  	/**
- 	 * Sets up a new Posts by Author widget instance.
+ 	 * Sets up a new Get Contributed Posts widget instance.
  	 *
  	 * @since 2.8.0
  	 * @access public
  	 */
  	public function __construct() {
- 		$widget_ops = array('classname' => 'widget-posts-by-author', 'description' => __( "Recent posts by author.") );
- 		parent::__construct('author-posts', __('Posts by Author'), $widget_ops);
- 		$this->alt_option_name = 'widget-posts-by-author';
+ 		$widget_ops = array('classname' => 'widget-get-contributed-posts', 'description' => __( "Recent posts by author.") );
+ 		parent::__construct('author-posts', __('Get Contributed Posts'), $widget_ops);
+ 		$this->alt_option_name = 'widget-get-contributed-posts';
  	}
  	/**
- 	 * Outputs the content for the current Posts by Author widget instance.
+ 	 * Outputs the content for the current Get Contributed Posts widget instance.
  	 *
  	 * @since 2.8.0
  	 * @access public
  	 *
  	 * @param array $args     Display arguments including 'before_title', 'after_title',
  	 *                        'before_widget', and 'after_widget'.
- 	 * @param array $instance Settings for the current Posts by Author widget instance.
+ 	 * @param array $instance Settings for the current Get Contributed Posts widget instance.
  	 */
  	public function widget( $args, $instance ) {
  		if ( ! isset( $args['widget_id'] ) ) {
@@ -49,7 +49,7 @@
  			$number = 5;
  		$version_one = isset( $instance['version_one'] ) ? $instance['version_one'] : false;
  		/**
- 		 * Filter the arguments for the Posts by Author widget.
+ 		 * Filter the arguments for the Get Contributed Posts widget.
  		 *
  		 * @since 3.4.0
  		 *
@@ -136,7 +136,7 @@
     */
  	}
  	/**
- 	 * Handles updating the settings for the current Posts by Author widget instance.
+ 	 * Handles updating the settings for the current Get Contributed Posts widget instance.
  	 *
  	 * @since 2.8.0
  	 * @access public
@@ -157,7 +157,7 @@
  		return $instance;
  	}
  	/**
- 	 * Outputs the settings form for the Posts by Author widget.
+ 	 * Outputs the settings form for the Get Contributed Posts widget.
  	 *
  	 * @since 2.8.0
  	 * @access public
@@ -192,4 +192,4 @@
  <?php
  	}
  }
- add_action( 'widgets_init', create_function( '', 'return register_widget( "Posts_By_Author_Widget" );' ) );
+ add_action( 'widgets_init', create_function( '', 'return register_widget( "Get_Contributed_Posts_Widget" );' ) );
